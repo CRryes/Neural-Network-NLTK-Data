@@ -1,0 +1,283 @@
+#Programa creado por: Jose Carlos Peña Reyes y Maria Fernanda Bravo Carrillo, UABCS BCS, ITC 8°
+
+
+#primero vamos a importar todas las librerias y demas utilidades que nesesitaremos para realizar este programa
+import numpy as np
+import pandas as pd
+import nltk
+import re
+import math
+import matplotlib.pyplot as plt
+import tensorflow.keras as keras
+import tensorflow as tf
+from nltk.corpus import brown
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+import tensorflow 
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
+from sklearn.decomposition import PCA
+import spacy
+from nltk import SnowballStemmer
+
+
+#ahora descargaremos los archivos que vamos a utiliar, los stop_words y brown.
+nlp = spacy.load("en_core_web_sm")
+englishstemner = SnowballStemmer("english")
+nltk.download("brown")
+nltk.download("stopwords", quiet=True)
+stop_words = set(stopwords.words("english"))
+
+#los siguientes tres print nos muestran el tema que vamos a clasificar, seguido de cuantos documentos tiene y el nombre directorio del documento
+print("belles_lettres ",len(brown.fileids(categories = "belles_lettres")),brown.fileids(categories = "belles_lettres"))
+print("learned ",len(brown.fileids(categories = "learned")),brown.fileids(categories = "learned"))
+print("lore ", len(brown.fileids(categories = "lore")),brown.fileids(categories = "lore"))
+
+#las siguientes son las funciones que se nesesitaran, se llaman a si mismas asi que es nesesario la presencia de todas.
+def STEM(texto):
+    tokens = normalize(texto)  
+    stems = [englishstemner.stem(token) for token in tokens]
+    stems = set(stems)
+    strstem = ' '.join(stems)
+    return strstem
+def LEMMA(texto):
+    doc = nlp(texto)
+    lemmas = [tok.lemma_.lower() for tok in doc]
+    lemmas = set(lemmas)
+    strlem = ' '.join(lemmas)
+    return strlem
+def normalize(text):
+    doc = nlp(text)
+    words = [t.orth_ for t in doc if not t.is_punct | t.is_stop]
+    lexical_tokens = [t.lower() for t in words if len(t) > 3 and
+    t.isalpha()]
+    return lexical_tokens
+def limpiadodeTexto(cadena):
+    filtered_sentence = [w for w in cadena if not w in stop_words]
+    tex = " ".join(filtered_sentence)
+    choki = puntuacion(tex)
+    tutt = " ".join(choki)
+    tt = tutt.split()
+    gg = " ".join(tt)
+    return gg
+def puntuacion(seguimiento):
+    cambio = convertirAminuscula(seguimiento)
+    reductor = re.sub('[^A-Za-z]', " ", convertirAminuscula(seguimiento))   #ELIMINA CARACTERES DEL CODIGO ASCII Y SOLO DEJA EL RANGO QUE NOSOTROS LE ESTAMOS DEJANDO
+    TextoEnEtapaFinal = reductor.split(" ")
+    return TextoEnEtapaFinal
+def convertirAminuscula(String):
+    lineaminuscula = String.lower()
+    return lineaminuscula
+
+
+#IMPORTANTE a partir de aqui seccionaremos el codigo y solo tomaremos el que querramos, estos pueden ser divididos en diferentes espacios
+#utilizando jupyter 
+# es importante mencionar que el orden de las funciones es el mismo que se les presento. aqui el orden de los factores si afecta el producto
+#la siguiente seccion nos da como resultado lso documentos utilizando BoW, StopWords, TF-IDF, y analiza un total de 26,314 entradas para la red neuonal
+    collection = ""
+for x in range(len(brown.fileids(categories = "belles_lettres"))):
+  collection = collection + limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[x])) + "$$$" 
+for x in range(len(brown.fileids(categories = "learned"))):
+  collection = collection + limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "learned")[x])) + "$$$" 
+for x in range(len(brown.fileids(categories = "lore"))):
+  collection = collection + limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "lore")[x])) + "$$$" 
+g = collection.split("$$$") #vector con los elementos
+Corpus = g
+delimiter = "aab"
+
+
+
+#  StopWords,BoW, Lemma,Stem, TF-IDF.  y analiza 15361 entradas para la red neoronal
+filtroN1=""
+filtroN2=""
+collection = ""
+for x in range(len(brown.fileids(categories = "belles_lettres"))):
+  filtroN1=LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[x])))
+  filtroN2=STEM(filtroN1)
+  collection = collection + filtroN2 + "$$$" 
+for x in range(len(brown.fileids(categories = "learned"))):
+  filtroN1=LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "learned")[x])))
+  filtroN2=STEM(filtroN1)
+  collection = collection + filtroN2 + "$$$" 
+for x in range(len(brown.fileids(categories = "lore"))):
+  filtroN1=LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "lore")[x])))
+  filtroN2=STEM(filtroN1)
+  collection = collection + filtroN2 + "$$$" 
+g = collection.split("$$$")
+Corpus = g
+delimiter="aaron"
+
+# StopWords,BoW, Stem,Lemma, TF-IDF y prepara 15608 entradas a la red neuronal
+
+filtroN1=""
+filtroN2=""
+collection = ""
+for x in range(len(brown.fileids(categories = "belles_lettres"))):
+  filtroN1=STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[x])))
+  filtroN2=LEMMA(filtroN1)
+  collection = collection + filtroN2 + "$$$" 
+for x in range(len(brown.fileids(categories = "learned"))):
+  filtroN1=STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "learned")[x])))
+  filtroN2=LEMMA(filtroN1)
+  collection = collection + filtroN2 + "$$$" 
+for x in range(len(brown.fileids(categories = "lore"))):
+  filtroN1=STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "lore")[x])))
+  filtroN2=LEMMA(filtroN1)
+  collection = collection + filtroN2 + "$$$" 
+g = collection.split("$$$")
+Corpus = g
+delimiter="aaron"
+
+
+
+# StopWords,BoW, Stem, TF-IDF. y prepara    15655 entradas para la red neuronal
+
+
+collection = ""
+for x in range(len(brown.fileids(categories = "belles_lettres"))):
+  collection = collection + STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[x]))) + "$$$" 
+for x in range(len(brown.fileids(categories = "learned"))):
+  collection = collection + STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "learned")[x]))) + "$$$" 
+for x in range(len(brown.fileids(categories = "lore"))):
+  collection = collection + STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "lore")[x]))) + "$$$" 
+g = collection.split("$$$")
+Corpus = g
+delimiter="aaron"
+
+# StopWords,BoW, Lemma, TF-IDF y prepara  21122 entrada spara la red neuronal
+collection = ""
+for x in range(len(brown.fileids(categories = "belles_lettres"))):
+  collection = collection + LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[x]))) + "$$$" 
+for x in range(len(brown.fileids(categories = "learned"))):
+  collection = collection + LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "learned")[x]))) + "$$$" 
+for x in range(len(brown.fileids(categories = "lore"))):
+  collection = collection + LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "lore")[x]))) + "$$$" 
+g = collection.split("$$$")
+Corpus = g
+delimiter="aab"
+
+#la siguiente seccion perpara la matriz TF-IDF del Corpus que se genero anteriormente y lo convierte a cvs para dejarlo listo para la red neuronal
+vectorizer = TfidfVectorizer()
+Datos = vectorizer.fit_transform(Corpus)
+df = pd.DataFrame(Datos.toarray(),columns = vectorizer.get_feature_names())
+
+
+df.loc[0:74, delimiter] = "belles_lettres"
+df.loc[75:155, delimiter] = "learned"
+df.loc[156:203, delimiter] = "lore"
+df
+df.to_csv('csv_example.csv')
+
+
+#Aqui inicia la red neuronal, puede modificarse la cantidad de epoch y de CapaOculta para determinar la complejidad y reducir los errores
+CapaOculta =10000
+dataset = pd.read_csv('csv_example.csv')
+longitud = len(vectorizer.get_feature_names())#longitud del vocabulario
+encoder = LabelEncoder()
+X = dataset.iloc[0:, 2:longitud].values
+y = dataset.iloc[0:, 1].values
+y1 = encoder.fit_transform(y)
+Y = pd.get_dummies(y1).values
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=0)
+
+model = Sequential()
+model.add(Dense(CapaOculta, input_shape=(longitud-2,), activation='sigmoid'))
+model.add(Dense(3, activation='sigmoid'))
+model.compile(Adam(lr=0.01), 'categorical_crossentropy', metrics=['accuracy'])
+model.summary()
+
+model.fit(X_train, y_train, epochs=300)
+y_pred = model.predict(X_test)
+y_test_class = np.argmax(y_test, axis=1)
+y_pred_class = np.argmax(y_pred, axis=1)
+print(y_test_class)
+print(y_pred_class)
+from sklearn.metrics import classification_report, confusion_matrix
+#los sigientes print son los vectores de prediccion y entrenamiento
+print(classification_report(y_test_class, y_pred_class))
+print(confusion_matrix(y_test_class,y_pred_class))
+
+
+matriz = confusion_matrix(y_test_class,y_pred_class)
+
+#aqui confirmamos los valores generados en automatico en la matriz aterior
+def accuracy(matriz):
+    vector = matriz
+    TruePositives = 0
+    for x in range(len(vector)):
+        TruePositives = TruePositives + (vector[x][x])#sumatoria de elementos
+
+    result_final= TruePositives /  (np.sum(vector)) #division con todos los elementos sumados de tp de la matriz
+    return result_final
+
+def precision(matriz):
+    vector = matriz
+    result = np.zeros(len(vector))
+    for x in range(len(vector)):
+     Sumatoria = (vector[x,x]) / (np.sum(vector[:, x], axis=0))
+     result[x] = Sumatoria
+    return result
+
+
+def recall(matriz):
+    vector = matriz
+    result = np.zeros(len(vector))
+    for x in range(len(vector)):
+     Sumatoria = vector[x, x] / np.sum(vector[x, :], axis=0)
+     result[x]= Sumatoria
+    return result    
+
+def ff(recall, precision):
+    result = np.zeros(len(recall))
+    for x in range (len(recall)):
+        Sumatoria = 2*((recall[x]*precision[x])/(recall[x]+precision[x]))
+        result[x]=Sumatoria
+    return result    
+  
+print("Resultados Accuracy   -> ", accuracy(matriz))
+print("Resultados Precision -> ",precision(matriz))
+preci = precision(matriz)
+print("Resultados Recall   -> ",recall(matriz))
+rec = recall(matriz)
+print("Resultados F1-Score   -> " ,ff(rec,preci))
+
+
+#esta seccion es la implementacion de PCA, ya esta daptada a nuestra matriz de datos para determinar la variabilidad
+meanIris=np.mean(Datos,axis=0)
+Xnew=Datos-meanIris
+
+pca_iris = PCA(n_components=100)
+pca_irisRes = pca_iris.fit_transform(Xnew)
+X_train, X_test, y_train, y_test = train_test_split(pca_irisRes[:,0:2], Y, test_size=0.2, random_state=0)
+print(pca_iris.explained_variance_ratio_)
+print(pca_iris.explained_variance_ratio_[0])
+
+#los siguiente sprint son un ejemplo de la importancia de la reduccion y limpieza de palabras de textos no nesesarios, reduciendo asi el esfuerzo y obteniendo un resultado mejor
+print("Combinacion - NORMAL")
+print(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0])))
+longitudDeVector=limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0])).split(" ")
+print(len(longitudDeVector))
+print("Combinacion - STEM")
+print(STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0]))))
+longitudDeVector=STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0]))).split(" ")
+print(len(longitudDeVector))
+print("Combinacion -LEMMA ")
+print(LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0]))))
+longitudDeVector=LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0]))).split(" ")
+print(len(longitudDeVector))
+print("Combinacion - STEM-LEMMA")
+print(LEMMA(STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0])))))
+longitudDeVector=LEMMA(STEM(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0])))).split(" ")
+print(len(longitudDeVector))
+print("Combinacion - LEMMA-STEM")
+print(STEM(LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0])))))
+longitudDeVector=STEM(LEMMA(limpiadodeTexto(brown.words(fileids=brown.fileids(categories = "belles_lettres")[0])))).split(" ")
+print(len(longitudDeVector))
+
+#esta linea nos muestra el vocabulario con el que trabamos y la longitud de estos mismos.
+print(vectorizer.get_feature_names())
+len(vectorizer.get_feature_names())
